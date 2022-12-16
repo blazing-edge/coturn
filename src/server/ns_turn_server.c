@@ -34,6 +34,7 @@
 #include "ns_turn_allocation.h"
 #include "ns_turn_ioalib.h"
 #include "ns_turn_utils.h"
+#include "ns_geo_api.h"
 
 ///////////////////////////////////////////
 
@@ -3430,7 +3431,7 @@ static int check_stun_auth(turn_turnserver *server, ts_ur_super_session *ss, stu
 
 static void set_alternate_server(turn_server_addrs_list_t *asl, const ioa_addr *local_addr, size_t *counter,
                                  uint16_t method, stun_tid *tid, int *resp_constructed, int *err_code,
-                                 const uint8_t **reason, ioa_network_buffer_handle nbh) {
+                                 const uint8_t **reason, ioa_network_buffer_handle nbh, int use_geo_api) {
   if (asl && asl->size && local_addr) {
 
     size_t i;
@@ -3528,7 +3529,7 @@ static int handle_turn_command(turn_turnserver *server, ts_ur_super_session *ss,
           if (asl && asl->size) {
             TURN_MUTEX_LOCK(&(asl->m));
             set_alternate_server(asl, get_local_addr_from_ioa_socket(ss->client_socket), &(server->as_counter), method,
-                                 &tid, resp_constructed, &err_code, &reason, nbh);
+                                 &tid, resp_constructed, &err_code, &reason, nbh, server->use_geo_api);
             TURN_MUTEX_UNLOCK(&(asl->m));
           }
         }
@@ -4773,7 +4774,7 @@ void init_turn_server(turn_turnserver *server, turnserver_id id, int verbose, io
                       vintp permission_lifetime, vintp stun_only, vintp no_stun, vintp no_software_attribute,
                       vintp web_admin_listen_on_workers, turn_server_addrs_list_t *alternate_servers_list,
                       turn_server_addrs_list_t *tls_alternate_servers_list, turn_server_addrs_list_t *aux_servers_list,
-                      int self_udp_balance, vintp no_multicast_peers, vintp allow_loopback_peers,
+                      int use_geo_api, int self_udp_balance, vintp no_multicast_peers, vintp allow_loopback_peers,
                       ip_range_list_t *ip_whitelist, ip_range_list_t *ip_blacklist,
                       send_socket_to_relay_cb send_socket_to_relay, vintp secure_stun, vintp mobility, int server_relay,
                       send_turn_session_info_cb send_turn_session_info, send_https_socket_cb send_https_socket,
@@ -4821,6 +4822,7 @@ void init_turn_server(turn_turnserver *server, turnserver_id id, int verbose, io
   server->tls_alternate_servers_list = tls_alternate_servers_list;
   server->aux_servers_list = aux_servers_list;
   server->self_udp_balance = self_udp_balance;
+  server->use_geo_api = use_geo_api;
 
   server->stale_nonce = stale_nonce;
   server->max_allocate_lifetime = max_allocate_lifetime;
@@ -4858,6 +4860,8 @@ void init_turn_server(turn_turnserver *server, turnserver_id id, int verbose, io
   server->no_stun_backward_compatibility = no_stun_backward_compatibility;
 
   server->response_origin_only_with_rfc5780 = response_origin_only_with_rfc5780;
+
+  geoapi_init();
 }
 
 ioa_engine_handle turn_server_get_engine(turn_turnserver *s) {

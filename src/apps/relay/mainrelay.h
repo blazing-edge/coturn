@@ -275,6 +275,8 @@ typedef struct _turn_params_ {
   turn_server_addrs_list_t alternate_servers_list;
   turn_server_addrs_list_t tls_alternate_servers_list;
 
+  int use_geo_api;
+
   /////////////// stop server ////////////////
   int stop_turn_server;
 

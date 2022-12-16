@@ -1,30 +1,15 @@
-# Author: Kang Lin <kl222@126.com>
-
-project(turn_server)
+project(turn_geoapi)
 
 set(SOURCE_FILES
-    ns_turn_allocation.c
-    ns_turn_maps_rtcp.c
-    ns_turn_maps.c
-    ns_turn_server.c
+	ns_geo_api.c
     )
 
 set(HEADER_FILES
-    ns_turn_allocation.h
-    ns_turn_ioalib.h
-    ns_turn_khash.h
-    ns_turn_maps_rtcp.h
-    ns_turn_maps.h
-    ns_turn_server.h
-    ns_turn_session.h
+	ns_geo_api.h
     )
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES} ${HEADER_FILES})
 
-target_link_libraries(${PROJECT_NAME} PUBLIC turnclient)
-target_link_libraries(${PROJECT_NAME} PRIVATE turn_geoapi)
-
-# See: http://www.it1352.com/478094.html
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     )
