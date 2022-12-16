@@ -1,0 +1,3 @@
+[submodule "src/geoapi/shared"]
+	path = src/geoapi/shared
+	url = https://github.com/blazing-edge/shared.git
