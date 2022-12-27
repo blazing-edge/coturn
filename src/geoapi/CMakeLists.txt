@@ -2,10 +2,14 @@ project(turn_geoapi)
 
 set(SOURCE_FILES
 	ns_geo_api.c
+	shared/geoip.cpp
+	shared/lgr.cpp
     )
 
 set(HEADER_FILES
 	ns_geo_api.h
+	shared/geoip.hpp
+	shared/lgr.hpp
     )
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES} ${HEADER_FILES})
@@ -22,6 +26,8 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     PUBLIC_HEADER "${HEADER_FILES}"  # Install head files
     VERSION ${VERSION}
     )
+
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 
 INSTALL(TARGETS ${PROJECT_NAME}
     EXPORT ${PROJECT_NAME}Config

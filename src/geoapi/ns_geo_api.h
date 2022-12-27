@@ -4,10 +4,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+void geoapi_init();
+
 #ifdef __cplusplus
 }
 #endif
-
-void geoapi_init();
 
 #endif //__GEO_API__
