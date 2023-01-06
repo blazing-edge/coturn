@@ -193,7 +193,7 @@ turn_params_t turn_params = {
     {NULL, 0, {0, NULL}}, /*tls_alternate_servers_list*/
 
     0, /*use_geo_api*/
-
+    0, /*use_sys_stats*/
     /////////////// stop server ////////////////
     0, /*stop_turn_server*/
 
@@ -1383,6 +1383,7 @@ enum EXTRA_OPTS {
   ALTERNATE_SERVER_OPT,
   TLS_ALTERNATE_SERVER_OPT,
   USE_GEO_API,
+  USE_SYS_STATS,
   NO_MULTICAST_PEERS_OPT,
   ALLOW_LOOPBACK_PEERS_OPT,
   MAX_ALLOCATE_TIMEOUT_OPT,
@@ -1532,6 +1533,7 @@ static const struct myoption long_options[] = {
     {"alternate-server", required_argument, NULL, ALTERNATE_SERVER_OPT},
     {"tls-alternate-server", required_argument, NULL, TLS_ALTERNATE_SERVER_OPT},
     {"use-geo-api", optional_argument, NULL, USE_GEO_API},
+    {"use-sys-stats", optional_argument, NULL, USE_SYS_STATS},
     {"rest-api-separator", required_argument, NULL, 'C'},
     {"max-allocate-timeout", required_argument, NULL, MAX_ALLOCATE_TIMEOUT_OPT},
     {"no-multicast-peers", optional_argument, NULL, NO_MULTICAST_PEERS_OPT},
@@ -2238,6 +2240,9 @@ static void set_option(int c, char *value) {
     break;
   case USE_GEO_API:
     turn_params.use_geo_api = get_bool_value(value);
+    break;
+  case USE_SYS_STATS:
+    turn_params.use_sys_stats = get_bool_value(value);
     break;
   case ALLOWED_PEER_IPS:
     if (add_ip_list_range(value, NULL, &turn_params.ip_whitelist) == 0)

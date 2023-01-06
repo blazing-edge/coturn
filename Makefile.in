@@ -13,7 +13,7 @@ LIBCLIENTTURN_DEPS = ${LIBCLIENTTURN_HEADERS} ${MAKE_DEPS}
 LIBCLIENTTURN_OBJS = build/obj/ns_turn_ioaddr.o build/obj/ns_turn_msg_addr.o build/obj/ns_turn_msg.o 
 
 GEOAPI_HEADERS = src/geoapi/ns_geo_api.h src/geoapi/shared/geoip.hpp src/geoapi/shared/lgr.hpp src/geoapi/shared/lgr.descr.hpp src/geoapi/shared/clock.hpp
-GEOAPI_MODS = src/geoapi/ns_geo_api.c src/geoapi/shared/geoip.cpp src/geoapi/shared/lgr.cpp src/geoapi/shared/lgr.descr.cpp src/geoapi/shared/clock.cpp
+GEOAPI_MODS = src/geoapi/ns_geo_api.cpp src/geoapi/shared/geoip.cpp src/geoapi/shared/lgr.cpp src/geoapi/shared/lgr.descr.cpp src/geoapi/shared/clock.cpp
 GEOAPI_DEPS = ${GEOAPI_HEADERS} ${MAKE_DEPS}
 
 SERVERTURN_HEADERS = src/server/ns_turn_allocation.h src/server/ns_turn_ioalib.h src/server/ns_turn_khash.h src/server/ns_turn_maps_rtcp.h src/server/ns_turn_maps.h src/server/ns_turn_server.h src/server/ns_turn_session.h 

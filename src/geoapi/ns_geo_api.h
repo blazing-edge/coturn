@@ -7,6 +7,10 @@ extern "C" {
 
 void geoapi_init();
 
+void geoapi_deinit();
+
+double geoapi_distance(const char* ip1, const char* ip2);
+
 #ifdef __cplusplus
 }
 #endif

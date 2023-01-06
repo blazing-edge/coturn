@@ -1287,6 +1287,40 @@ static void mysql_disconnect(void) {
   TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "MySQL connection was closed.\n");
 }
 
+static int mysql_get_sys_stats(const uint8_t* ip, float* out_cpu_usage, int* out_mem_free)
+{
+    int ret = 0;
+
+    MYSQL *myc = get_mydb_connection();
+    if (myc) {
+      char statement[TURN_LONG_STRING_SIZE];
+      snprintf(statement, sizeof(statement), "select cpu_usage,mem_free from turn_sys_stats where ip='%s'", ip);
+      int res = mysql_query(myc, statement);
+      if (res) {
+        TURN_LOG_FUNC(TURN_LOG_LEVEL_ERROR, "Error retrieving MySQL DB information: %s\n", mysql_error(myc));
+      } else {
+        MYSQL_RES *mres = mysql_store_result(myc);
+        if (!mres) {
+          TURN_LOG_FUNC(TURN_LOG_LEVEL_ERROR, "Error retrieving MySQL DB information: %s\n", mysql_error(myc));
+        } else if (mysql_field_count(myc) != 2) {
+          TURN_LOG_FUNC(TURN_LOG_LEVEL_ERROR, "Unknown error retrieving MySQL DB information: %s\n", statement);
+        } else {
+          MYSQL_ROW row = mysql_fetch_row(mres);
+          if (row && row[0]) {
+            *out_cpu_usage = atof(row[0]);
+            *out_mem_free = atoi(row[1]);
+
+            ret = 1;
+          }
+        }
+
+        if (mres)
+          mysql_free_result(mres);
+      }
+    }
+    return ret;
+}
+
 //////////////////////////////////////////////////////
 
 static const turn_dbdriver_t driver = {
@@ -1296,7 +1330,7 @@ static const turn_dbdriver_t driver = {
     &mysql_list_realm_options, &mysql_auth_ping,      &mysql_get_ip_list,    &mysql_set_permission_ip,
     &mysql_reread_realms,      &mysql_set_oauth_key,  &mysql_get_oauth_key,  &mysql_del_oauth_key,
     &mysql_list_oauth_keys,    &mysql_get_admin_user, &mysql_set_admin_user, &mysql_del_admin_user,
-    &mysql_list_admin_users,   &mysql_disconnect};
+    &mysql_list_admin_users,   &mysql_disconnect,     &mysql_get_sys_stats};
 
 const turn_dbdriver_t *get_mysql_dbdriver(void) { return &driver; }
 

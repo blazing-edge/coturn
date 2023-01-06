@@ -1,7 +1,7 @@
 project(turn_geoapi)
 
 set(SOURCE_FILES
-	ns_geo_api.c
+        ns_geo_api.cpp
 	shared/geoip.cpp
 	shared/lgr.cpp
     )

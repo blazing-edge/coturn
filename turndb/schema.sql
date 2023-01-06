@@ -53,3 +53,9 @@ CREATE TABLE admin_user (
 	password varchar(127),
 	primary key (name)
 );
+
+CREATE TABLE turn_sys_stats  (
+  ip VARCHAR(255) NOT NULL,
+  cpu_usage FLOAT,
+  mem_free INT
+);

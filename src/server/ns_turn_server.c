@@ -30,11 +30,14 @@
 
 #include "ns_turn_server.h"
 
+#include "../apps/relay/dbdrivers/dbdriver.h"
 #include "../apps/relay/ns_ioalib_impl.h"
 #include "ns_turn_allocation.h"
 #include "ns_turn_ioalib.h"
 #include "ns_turn_utils.h"
 #include "ns_geo_api.h"
+
+#include <float.h>
 
 ///////////////////////////////////////////
 
@@ -3429,9 +3432,25 @@ static int check_stun_auth(turn_turnserver *server, ts_ur_super_session *ss, stu
 
 //<<== AUTH
 
-static void set_alternate_server(turn_server_addrs_list_t *asl, const ioa_addr *local_addr, size_t *counter,
+static const float cpu_limit = 90;
+static const int   mem_limit = 100;
+
+static int check_is_overloaded(const uint8_t* ip)
+{
+    const turn_dbdriver_t *dbd = get_dbdriver();
+
+    float cpu_usage = 0;
+    int mem_free = 0;
+
+    if(dbd->get_sys_stats(ip, &cpu_usage, &mem_free))
+        return (cpu_usage > cpu_limit) || (mem_free < mem_limit);
+    else
+        return 1;
+}
+
+static void set_alternate_server(ts_ur_super_session *ss, turn_server_addrs_list_t *asl, const ioa_addr *local_addr, size_t *counter,
                                  uint16_t method, stun_tid *tid, int *resp_constructed, int *err_code,
-                                 const uint8_t **reason, ioa_network_buffer_handle nbh, int use_geo_api) {
+                                 const uint8_t **reason, ioa_network_buffer_handle nbh, int use_geo_api, int use_sys_stats) {
   if (asl && asl->size && local_addr) {
 
     size_t i;
@@ -3444,22 +3463,78 @@ static void set_alternate_server(turn_server_addrs_list_t *asl, const ioa_addr *
         return;
     }
 
-    for (i = 0; i < asl->size; ++i) {
-      if (*counter >= asl->size)
-        *counter = 0;
-      ioa_addr *addr = &(asl->addrs[*counter]);
-      *counter += 1;
-      if (addr->ss.sa_family == local_addr->ss.sa_family) {
+    if(use_geo_api)
+    {
+        uint8_t str_ip_user[32] = {0};
+        addr_to_string_no_port(&ss->client_socket->remote_addr, str_ip_user);
 
-        *err_code = 300;
+        double min_distance = DBL_MAX;
+        int min_index = -1;
 
-        size_t len = ioa_network_buffer_get_size(nbh);
-        stun_init_error_response_str(method, ioa_network_buffer_data(nbh), &len, *err_code, *reason, tid);
-        *resp_constructed = 1;
-        stun_attr_add_addr_str(ioa_network_buffer_data(nbh), &len, STUN_ATTRIBUTE_ALTERNATE_SERVER, addr);
-        ioa_network_buffer_set_size(nbh, len);
+        double free_min_distance = DBL_MAX;
+        int free_min_index = -1;
 
-        return;
+        for (i = 0; i < asl->size; ++i)
+        {
+          ioa_addr *addr = &(asl->addrs[i]);
+
+          if (addr->ss.sa_family == local_addr->ss.sa_family)
+          {
+            uint8_t str_ip_alt_stun[32] = {0};
+
+            addr_to_string_no_port(addr, str_ip_alt_stun);
+
+            double current_distance = geoapi_distance((char*)str_ip_user, (char*)str_ip_alt_stun);
+
+            if(current_distance < min_distance)
+            {
+                min_distance = current_distance;
+                min_index = i;
+            }
+
+            if(use_sys_stats && !check_is_overloaded(str_ip_alt_stun))
+            {
+                if(current_distance < free_min_distance)
+                {
+                    free_min_distance = current_distance;
+                    free_min_index = i;
+                }
+            }
+         }
+      }
+
+      if(free_min_index != -1)
+          min_index = free_min_index;
+
+      if(min_index != -1)
+      {
+          *err_code = 300;
+
+          size_t len = ioa_network_buffer_get_size(nbh);
+          stun_init_error_response_str(method, ioa_network_buffer_data(nbh), &len, *err_code, *reason, tid);
+          *resp_constructed = 1;
+          stun_attr_add_addr_str(ioa_network_buffer_data(nbh), &len, STUN_ATTRIBUTE_ALTERNATE_SERVER, &(asl->addrs[min_index]));
+          ioa_network_buffer_set_size(nbh, len);
+      }
+    }else
+    {
+      for (i = 0; i < asl->size; ++i) {
+        if (*counter >= asl->size)
+          *counter = 0;
+        ioa_addr *addr = &(asl->addrs[*counter]);
+        *counter += 1;
+        if (addr->ss.sa_family == local_addr->ss.sa_family) {
+
+          *err_code = 300;
+
+          size_t len = ioa_network_buffer_get_size(nbh);
+          stun_init_error_response_str(method, ioa_network_buffer_data(nbh), &len, *err_code, *reason, tid);
+          *resp_constructed = 1;
+          stun_attr_add_addr_str(ioa_network_buffer_data(nbh), &len, STUN_ATTRIBUTE_ALTERNATE_SERVER, addr);
+          ioa_network_buffer_set_size(nbh, len);
+
+          return;
+        }
       }
     }
   }
@@ -3528,8 +3603,8 @@ static int handle_turn_command(turn_turnserver *server, ts_ur_super_session *ss,
 
           if (asl && asl->size) {
             TURN_MUTEX_LOCK(&(asl->m));
-            set_alternate_server(asl, get_local_addr_from_ioa_socket(ss->client_socket), &(server->as_counter), method,
-                                 &tid, resp_constructed, &err_code, &reason, nbh, server->use_geo_api);
+            set_alternate_server(ss, asl, get_local_addr_from_ioa_socket(ss->client_socket), &(server->as_counter), method,
+                                 &tid, resp_constructed, &err_code, &reason, nbh, server->use_geo_api, server->use_sys_stats);
             TURN_MUTEX_UNLOCK(&(asl->m));
           }
         }
@@ -4774,7 +4849,7 @@ void init_turn_server(turn_turnserver *server, turnserver_id id, int verbose, io
                       vintp permission_lifetime, vintp stun_only, vintp no_stun, vintp no_software_attribute,
                       vintp web_admin_listen_on_workers, turn_server_addrs_list_t *alternate_servers_list,
                       turn_server_addrs_list_t *tls_alternate_servers_list, turn_server_addrs_list_t *aux_servers_list,
-                      int use_geo_api, int self_udp_balance, vintp no_multicast_peers, vintp allow_loopback_peers,
+                      int use_geo_api, int use_sys_stats, int self_udp_balance, vintp no_multicast_peers, vintp allow_loopback_peers,
                       ip_range_list_t *ip_whitelist, ip_range_list_t *ip_blacklist,
                       send_socket_to_relay_cb send_socket_to_relay, vintp secure_stun, vintp mobility, int server_relay,
                       send_turn_session_info_cb send_turn_session_info, send_https_socket_cb send_https_socket,
@@ -4823,6 +4898,7 @@ void init_turn_server(turn_turnserver *server, turnserver_id id, int verbose, io
   server->aux_servers_list = aux_servers_list;
   server->self_udp_balance = self_udp_balance;
   server->use_geo_api = use_geo_api;
+  server->use_sys_stats = use_sys_stats;
 
   server->stale_nonce = stale_nonce;
   server->max_allocate_lifetime = max_allocate_lifetime;
