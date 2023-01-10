@@ -165,6 +165,9 @@ struct _turn_turnserver {
   int use_geo_api;
   int use_sys_stats;
 
+  float cpu_usage_limit;
+  int   mem_free_min_limit;
+
   /* White/black listing of address ranges */
   ip_range_list_t *ip_whitelist;
   ip_range_list_t *ip_blacklist;
@@ -212,7 +215,8 @@ void init_turn_server(turn_turnserver *server, turnserver_id id, int verbose, io
                       vintp no_software_attribute, vintp web_admin_listen_on_workers,
                       turn_server_addrs_list_t *alternate_servers_list,
                       turn_server_addrs_list_t *tls_alternate_servers_list, turn_server_addrs_list_t *aux_servers_list,
-                      int use_geo_api, int use_sys_stats, int self_udp_balance, vintp no_multicast_peers, vintp allow_loopback_peers,
+                      int use_geo_api, int use_sys_stats, int cpu_usage_limit, int mem_free_min_limit,
+                      int self_udp_balance, vintp no_multicast_peers, vintp allow_loopback_peers,
                       ip_range_list_t *ip_whitelist, ip_range_list_t *ip_blacklist,
                       send_socket_to_relay_cb send_socket_to_relay, vintp secure_stun, vintp mobility, int server_relay,
                       send_turn_session_info_cb send_turn_session_info, send_https_socket_cb send_https_socket,

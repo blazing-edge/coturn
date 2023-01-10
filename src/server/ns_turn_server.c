@@ -3432,10 +3432,7 @@ static int check_stun_auth(turn_turnserver *server, ts_ur_super_session *ss, stu
 
 //<<== AUTH
 
-static const float cpu_limit = 90;
-static const int   mem_limit = 100;
-
-static int check_is_overloaded(const uint8_t* ip)
+static int check_is_overloaded(const uint8_t* ip, float cpu_usage_limit, int mem_free_min_limit)
 {
     const turn_dbdriver_t *dbd = get_dbdriver();
 
@@ -3443,14 +3440,15 @@ static int check_is_overloaded(const uint8_t* ip)
     int mem_free = 0;
 
     if(dbd->get_sys_stats(ip, &cpu_usage, &mem_free))
-        return (cpu_usage > cpu_limit) || (mem_free < mem_limit);
+        return (cpu_usage > cpu_usage_limit) || (mem_free < mem_free_min_limit);
     else
         return 1;
 }
 
 static void set_alternate_server(ts_ur_super_session *ss, turn_server_addrs_list_t *asl, const ioa_addr *local_addr, size_t *counter,
                                  uint16_t method, stun_tid *tid, int *resp_constructed, int *err_code,
-                                 const uint8_t **reason, ioa_network_buffer_handle nbh, int use_geo_api, int use_sys_stats) {
+                                 const uint8_t **reason, ioa_network_buffer_handle nbh,
+                                 int use_geo_api, int use_sys_stats, float cpu_usage_limit, int mem_free_min_limit) {
   if (asl && asl->size && local_addr) {
 
     size_t i;
@@ -3492,7 +3490,7 @@ static void set_alternate_server(ts_ur_super_session *ss, turn_server_addrs_list
                 min_index = i;
             }
 
-            if(use_sys_stats && !check_is_overloaded(str_ip_alt_stun))
+            if(use_sys_stats && !check_is_overloaded(str_ip_alt_stun, cpu_usage_limit, mem_free_min_limit))
             {
                 if(current_distance < free_min_distance)
                 {
@@ -3604,7 +3602,7 @@ static int handle_turn_command(turn_turnserver *server, ts_ur_super_session *ss,
           if (asl && asl->size) {
             TURN_MUTEX_LOCK(&(asl->m));
             set_alternate_server(ss, asl, get_local_addr_from_ioa_socket(ss->client_socket), &(server->as_counter), method,
-                                 &tid, resp_constructed, &err_code, &reason, nbh, server->use_geo_api, server->use_sys_stats);
+                                 &tid, resp_constructed, &err_code, &reason, nbh, server->use_geo_api, server->use_sys_stats, server->cpu_usage_limit, server->mem_free_min_limit);
             TURN_MUTEX_UNLOCK(&(asl->m));
           }
         }
@@ -4849,7 +4847,8 @@ void init_turn_server(turn_turnserver *server, turnserver_id id, int verbose, io
                       vintp permission_lifetime, vintp stun_only, vintp no_stun, vintp no_software_attribute,
                       vintp web_admin_listen_on_workers, turn_server_addrs_list_t *alternate_servers_list,
                       turn_server_addrs_list_t *tls_alternate_servers_list, turn_server_addrs_list_t *aux_servers_list,
-                      int use_geo_api, int use_sys_stats, int self_udp_balance, vintp no_multicast_peers, vintp allow_loopback_peers,
+                      int use_geo_api, int use_sys_stats, int cpu_usage_limit, int mem_free_min_limit,
+                      int self_udp_balance, vintp no_multicast_peers, vintp allow_loopback_peers,
                       ip_range_list_t *ip_whitelist, ip_range_list_t *ip_blacklist,
                       send_socket_to_relay_cb send_socket_to_relay, vintp secure_stun, vintp mobility, int server_relay,
                       send_turn_session_info_cb send_turn_session_info, send_https_socket_cb send_https_socket,
@@ -4899,6 +4898,8 @@ void init_turn_server(turn_turnserver *server, turnserver_id id, int verbose, io
   server->self_udp_balance = self_udp_balance;
   server->use_geo_api = use_geo_api;
   server->use_sys_stats = use_sys_stats;
+  server->cpu_usage_limit = cpu_usage_limit;
+  server->mem_free_min_limit = mem_free_min_limit;
 
   server->stale_nonce = stale_nonce;
   server->max_allocate_lifetime = max_allocate_lifetime;

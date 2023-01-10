@@ -278,6 +278,9 @@ typedef struct _turn_params_ {
   int use_geo_api;
   int use_sys_stats;
 
+  int   cpu_usage_limit;
+  int   mem_free_min_limit;
+
   /////////////// stop server ////////////////
   int stop_turn_server;
 

@@ -194,6 +194,8 @@ turn_params_t turn_params = {
 
     0, /*use_geo_api*/
     0, /*use_sys_stats*/
+    90, /*cpu_usage_limit*/
+    100, /*mem_free_min_limit*/
     /////////////// stop server ////////////////
     0, /*stop_turn_server*/
 
@@ -1384,6 +1386,8 @@ enum EXTRA_OPTS {
   TLS_ALTERNATE_SERVER_OPT,
   USE_GEO_API,
   USE_SYS_STATS,
+  CPU_USAGE_LIMIT,
+  MEM_FREE_MIN_LIMIT,
   NO_MULTICAST_PEERS_OPT,
   ALLOW_LOOPBACK_PEERS_OPT,
   MAX_ALLOCATE_TIMEOUT_OPT,
@@ -1534,6 +1538,8 @@ static const struct myoption long_options[] = {
     {"tls-alternate-server", required_argument, NULL, TLS_ALTERNATE_SERVER_OPT},
     {"use-geo-api", optional_argument, NULL, USE_GEO_API},
     {"use-sys-stats", optional_argument, NULL, USE_SYS_STATS},
+    {"cpu-usage-limit", required_argument, NULL, CPU_USAGE_LIMIT},
+    {"mem-free-min-limit", required_argument, NULL, MEM_FREE_MIN_LIMIT},
     {"rest-api-separator", required_argument, NULL, 'C'},
     {"max-allocate-timeout", required_argument, NULL, MAX_ALLOCATE_TIMEOUT_OPT},
     {"no-multicast-peers", optional_argument, NULL, NO_MULTICAST_PEERS_OPT},
@@ -2243,6 +2249,12 @@ static void set_option(int c, char *value) {
     break;
   case USE_SYS_STATS:
     turn_params.use_sys_stats = get_bool_value(value);
+    break;
+  case CPU_USAGE_LIMIT:
+    turn_params.cpu_usage_limit = get_int_value(value, 90);
+    break;
+  case MEM_FREE_MIN_LIMIT:
+    turn_params.mem_free_min_limit = get_int_value(value, 100);
     break;
   case ALLOWED_PEER_IPS:
     if (add_ip_list_range(value, NULL, &turn_params.ip_whitelist) == 0)
