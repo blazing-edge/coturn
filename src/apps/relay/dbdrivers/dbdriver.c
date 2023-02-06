@@ -59,7 +59,10 @@ int convert_string_key_to_binary(char *keysource, hmackey_t key, size_t sz) {
   return 0;
 }
 
-persistent_users_db_t *get_persistent_users_db(void) { return &(turn_params.default_users_db.persistent_users_db); }
+persistent_users_db_t *get_persistent_users_db(void)
+{
+    return get_user_db_from_list(&turn_params.default_users_db.persistent_users_db_list, turn_params.default_users_db.user_db_idx);
+}
 
 const turn_dbdriver_t *get_dbdriver(void) {
   if (turn_params.default_users_db.userdb_type == TURN_USERDB_TYPE_UNKNOWN)

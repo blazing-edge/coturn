@@ -148,14 +148,26 @@ typedef struct _persistent_users_db_t {
   char userdb_sanitized[TURN_LONG_STRING_SIZE];
 } persistent_users_db_t;
 
+typedef struct _persistent_users_db_list_t {
+  persistent_users_db_t* persistent_users_dbs;
+  volatile size_t size;
+  TURN_MUTEX_DECLARE(m)
+} persistent_users_db_list_t;
+
 typedef struct _default_users_db_t {
   TURN_USERDB_TYPE userdb_type;
-
-  persistent_users_db_t persistent_users_db;
-
+  persistent_users_db_list_t persistent_users_db_list;
+  int user_db_idx;
   ram_users_db_t ram_db;
-
 } default_users_db_t;
+
+/////////////////////////////////////////////
+
+void init_user_db_list(persistent_users_db_list_t* in_list);
+void lock_user_db_list(persistent_users_db_list_t* in_list);
+void unlock_user_db_list(persistent_users_db_list_t* in_list);
+void add_user_db_to_list(persistent_users_db_list_t* in_list, char* userdb, char* userdb_sanitized);
+persistent_users_db_t* get_user_db_from_list(persistent_users_db_list_t* in_list, int index);  //can be NULL, not thread safe
 
 /////////////////////////////////////////////
 

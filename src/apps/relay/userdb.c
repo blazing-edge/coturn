@@ -1280,3 +1280,62 @@ void reread_realms(void) {
 }
 
 ///////////////////////////////
+
+void init_user_db_list(persistent_users_db_list_t *in_list)
+{
+    if(in_list)
+    {
+        in_list->persistent_users_dbs = NULL;
+        in_list->size = 0;
+        TURN_MUTEX_INIT(&(in_list->m));
+    }
+}
+
+void lock_user_db_list(persistent_users_db_list_t *in_list)
+{
+    if(in_list)
+        TURN_MUTEX_LOCK(&(in_list->m));
+}
+
+void unlock_user_db_list(persistent_users_db_list_t *in_list)
+{
+    if(in_list)
+        TURN_MUTEX_UNLOCK(&(in_list->m));
+}
+
+void add_user_db_to_list(persistent_users_db_list_t *in_list, char *userdb, char *userdb_sanitized)
+{
+    if(in_list)
+    {
+        lock_user_db_list(in_list);
+
+        in_list->persistent_users_dbs = (persistent_users_db_t *)realloc(in_list->persistent_users_dbs, sizeof(persistent_users_db_t) * (in_list->size + 1));
+
+        if(userdb)
+        {
+            STRCPY(in_list->persistent_users_dbs[in_list->size].userdb, userdb);
+        }
+
+        if(userdb_sanitized)
+        {
+            STRCPY(in_list->persistent_users_dbs[in_list->size].userdb_sanitized, userdb_sanitized);
+        }
+
+        ++in_list->size;
+
+        unlock_user_db_list(in_list);
+    }
+}
+
+persistent_users_db_t *get_user_db_from_list(persistent_users_db_list_t *in_list, int index)
+{
+    if(in_list)
+    {
+        if(index >= 0 && index < in_list->size)
+        {
+            return &in_list->persistent_users_dbs[index];
+        }
+    }
+
+    return NULL;
+}

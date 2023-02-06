@@ -231,20 +231,22 @@ static Myconninfo *MyconninfoParse(char *userdb, char **errmsg) {
 }
 
 static MYSQL *get_mydb_connection(void) {
-
-  persistent_users_db_t *pud = get_persistent_users_db();
-
   MYSQL *mydbconnection = (MYSQL *)pthread_getspecific(connection_key);
 
   if (mydbconnection) {
     if (mysql_ping(mydbconnection)) {
       mysql_close(mydbconnection);
       mydbconnection = NULL;
+      ++turn_params.default_users_db.user_db_idx;
+      if(turn_params.default_users_db.user_db_idx > turn_params.default_users_db.persistent_users_db_list.size)
+          turn_params.default_users_db.user_db_idx = 0;
       (void)pthread_setspecific(connection_key, mydbconnection);
     }
   }
 
   if (!mydbconnection) {
+    persistent_users_db_t *pud = get_persistent_users_db();
+
     char *errmsg = NULL;
     Myconninfo *co = MyconninfoParse(pud->userdb, &errmsg);
     if (!co) {

@@ -743,9 +743,11 @@ static void cli_print_configuration(struct cli_session *cs) {
 
     myprintf(cs, "\n");
 
-    if (turn_params.default_users_db.persistent_users_db.userdb[0]) {
+    persistent_users_db_t* user_db = get_user_db_from_list(&turn_params.default_users_db.persistent_users_db_list, 0);
+
+    if (user_db) {
       cli_print_str(cs, userdb_type_to_string(turn_params.default_users_db.userdb_type), "DB type", 0);
-      cli_print_str(cs, turn_params.default_users_db.persistent_users_db.userdb, "DB", 0);
+      cli_print_str(cs, user_db->userdb, "DB", 0);
     } else {
       cli_print_str(cs, "none", "DB type", 0);
       cli_print_str(cs, "none", "DB", 0);
@@ -2096,10 +2098,12 @@ static void write_pc_page(ioa_socket_handle s) {
 
         https_print_empty_row(sb, 2);
 
-        if (turn_params.default_users_db.persistent_users_db.userdb[0]) {
+        persistent_users_db_t* user_db = get_user_db_from_list(&turn_params.default_users_db.persistent_users_db_list, 0);
+
+        if (user_db) {
           https_print_str(sb, userdb_type_to_string(turn_params.default_users_db.userdb_type), "DB type", 0);
           if (is_superuser()) {
-            https_print_str(sb, turn_params.default_users_db.persistent_users_db.userdb, "DB", 0);
+            https_print_str(sb, user_db->userdb, "DB", 0);
           }
         } else {
           https_print_str(sb, "none", "DB type", 0);
