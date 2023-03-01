@@ -3463,8 +3463,20 @@ static void set_alternate_server(ts_ur_super_session *ss, turn_server_addrs_list
 
     if(use_geo_api)
     {
-        uint8_t str_ip_user[32] = {0};
+        TURN_LOG_FUNC( TURN_LOG_LEVEL_INFO,
+                                            "session %018llu: user <%s> realm <%s> origin <%s>, geoapi enter\n",
+                                            (unsigned long long)(ss->id), (char *)ss->username, (char *)ss->realm_options.name, (char *)ss->origin
+
+                     );
+        uint8_t str_ip_user[MAX_IOA_ADDR_STRING] = {0};
         addr_to_string_no_port(&ss->client_socket->remote_addr, str_ip_user);
+
+        TURN_LOG_FUNC( TURN_LOG_LEVEL_INFO,
+                                            "session %018llu: user <%s> realm <%s> origin <%s>, geoapi user_ip<%s>\n",
+                                            (unsigned long long)(ss->id), (char *)ss->username, (char *)ss->realm_options.name, (char *)ss->origin
+                                            ,(char*)str_ip_user
+                     );
+
 
         double min_distance = DBL_MAX;
         int min_index = -1;
@@ -3478,11 +3490,16 @@ static void set_alternate_server(ts_ur_super_session *ss, turn_server_addrs_list
 
           if (addr->ss.sa_family == local_addr->ss.sa_family)
           {
-            uint8_t str_ip_alt_stun[32] = {0};
+            uint8_t str_ip_alt_stun[MAX_IOA_ADDR_STRING] = {0};
 
             addr_to_string_no_port(addr, str_ip_alt_stun);
 
             double current_distance = geoapi_distance((char*)str_ip_user, (char*)str_ip_alt_stun);
+
+            TURN_LOG_FUNC( TURN_LOG_LEVEL_INFO,
+                                                "session %018llu: user <%s> realm <%s> origin <%s>, geoapi user_ip<%s> server_ip<%s> distance<%f>\n",
+                                                (unsigned long long)(ss->id), (char *)ss->username, (char *)ss->realm_options.name, (char *)ss->origin, (char*)str_ip_user, (char*)str_ip_alt_stun, current_distance
+                         );
 
             if(current_distance < min_distance)
             {
@@ -3504,8 +3521,15 @@ static void set_alternate_server(ts_ur_super_session *ss, turn_server_addrs_list
       if(free_min_index != -1)
           min_index = free_min_index;
 
+      //int min_index = 0;
+
       if(min_index != -1)
       {
+          TURN_LOG_FUNC( TURN_LOG_LEVEL_INFO,
+                                              "session %018llu: user <%s> realm <%s> origin <%s>, geoapi choosen server index %d \n",
+                                              (unsigned long long)(ss->id), (char *)ss->username, (char *)ss->realm_options.name, (char *)ss->origin, min_index
+                       );
+
           *err_code = 300;
 
           size_t len = ioa_network_buffer_get_size(nbh);
@@ -3522,6 +3546,11 @@ static void set_alternate_server(ts_ur_super_session *ss, turn_server_addrs_list
         ioa_addr *addr = &(asl->addrs[*counter]);
         *counter += 1;
         if (addr->ss.sa_family == local_addr->ss.sa_family) {
+            TURN_LOG_FUNC( TURN_LOG_LEVEL_INFO,
+                                                "session %018llu: user <%s> realm <%s> origin <%s>, geoapi choosen server index %d \n",
+                                                (unsigned long long)(ss->id), (char *)ss->username, (char *)ss->realm_options.name, (char *)ss->origin, (int)(*counter - 1)
+                         );
+
 
           *err_code = 300;
 
