@@ -223,7 +223,7 @@ turn_params_t turn_params = {
     0, /* prometheus username labelling disabled by default when prometheus is enabled */
 
     ///////////// Users DB //////////////
-    {(TURN_USERDB_TYPE)0, {"\0", "\0"}, {0, NULL, {NULL, 0}}},
+    {(TURN_USERDB_TYPE)0, {NULL, 0, {0, NULL}}, 0, {0, NULL, {NULL, 0}}},
 
     ///////////// CPUs //////////////////
     DEFAULT_CPUS_NUMBER,
