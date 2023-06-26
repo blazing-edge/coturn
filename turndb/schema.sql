@@ -3,6 +3,7 @@ CREATE TABLE turnusers_lt (
     realm varchar(127) default '',
     name varchar(512),
     hmackey char(128),
+	sess_id char(255),
     PRIMARY KEY (realm,name)
 );
 

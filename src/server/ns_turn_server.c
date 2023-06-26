@@ -3453,14 +3453,6 @@ static void set_alternate_server(ts_ur_super_session *ss, turn_server_addrs_list
 
     size_t i;
 
-    /* to prevent indefinite cycle: */
-
-    for (i = 0; i < asl->size; ++i) {
-      ioa_addr *addr = &(asl->addrs[i]);
-      if (addr_eq(addr, local_addr))
-        return;
-    }
-
     if(use_geo_api)
     {
         TURN_LOG_FUNC( TURN_LOG_LEVEL_INFO,
@@ -3530,16 +3522,29 @@ static void set_alternate_server(ts_ur_super_session *ss, turn_server_addrs_list
                                               (unsigned long long)(ss->id), (char *)ss->username, (char *)ss->realm_options.name, (char *)ss->origin, min_index
                        );
 
+          ioa_addr *addr = &(asl->addrs[min_index]);
+
+          if (addr_eq(addr, local_addr))
+            return;
+
           *err_code = 300;
 
           size_t len = ioa_network_buffer_get_size(nbh);
           stun_init_error_response_str(method, ioa_network_buffer_data(nbh), &len, *err_code, *reason, tid);
           *resp_constructed = 1;
-          stun_attr_add_addr_str(ioa_network_buffer_data(nbh), &len, STUN_ATTRIBUTE_ALTERNATE_SERVER, &(asl->addrs[min_index]));
+          stun_attr_add_addr_str(ioa_network_buffer_data(nbh), &len, STUN_ATTRIBUTE_ALTERNATE_SERVER, addr);
           ioa_network_buffer_set_size(nbh, len);
       }
     }else
     {
+        /* to prevent indefinite cycle: */
+
+      for (i = 0; i < asl->size; ++i) {
+        ioa_addr *addr = &(asl->addrs[i]);
+          if (addr_eq(addr, local_addr))
+            return;
+      }
+
       for (i = 0; i < asl->size; ++i) {
         if (*counter >= asl->size)
           *counter = 0;
